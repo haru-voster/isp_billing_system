@@ -1,0 +1,6 @@
+<div style="display:flex; gap:20px; margin-bottom:24px; border-bottom:1px solid #334155; padding-bottom:12px;">
+    <a href="{% url 'billing:staff_dashboard' %}" style="color:{% if active == 'dashboard' %}#7dd3fc{% else %}#94a3b8{% endif %}; text-decoration:none; font-size:14px; font-weight:600;">Dashboard</a>
+    <a href="{% url 'billing:staff_plans' %}" style="color:{% if active == 'plans' %}#7dd3fc{% else %}#94a3b8{% endif %}; text-decoration:none; font-size:14px; font-weight:600;">Plans</a>
+    <a href="{% url 'billing:staff_routers' %}" style="color:{% if active == 'routers' %}#7dd3fc{% else %}#94a3b8{% endif %}; text-decoration:none; font-size:14px; font-weight:600;">Routers</a>
+    <a href="/admin/" style="color:#94a3b8; text-decoration:none; font-size:14px;">Full admin →</a>
+</div>

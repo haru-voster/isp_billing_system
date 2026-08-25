@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're connected!</title>
+    <style>
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 32px; border-radius: 12px; width: 100%; max-width: 380px;
+                text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        h1 { font-size: 22px; margin-bottom: 8px; color: #86efac; }
+        p { color: #cbd5e1; font-size: 14px; line-height: 1.6; }
+        .detail { background: #0f172a; border-radius: 8px; padding: 16px; margin-top: 20px; text-align: left; font-size: 13px; }
+        .detail span { color: #94a3b8; }
+        a.btn { display: inline-block; margin-top: 20px; background: #22c55e; color: #052e16; padding: 10px 20px;
+                border-radius: 8px; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>You're connected 🎉</h1>
+        <p>Your free 7-day trial is active. Your MikroTik login username is your phone number.</p>
+        <div class="detail">
+            <div><span>Name:</span> {{ customer.full_name }}</div>
+            <div><span>Login:</span> {{ customer.mikrotik_username }}</div>
+            <div><span>Plan:</span> Trial — 7 days</div>
+        </div>
+        <a class="btn" href="{% url 'billing:pay' %}">Already want to top up?</a>
+    </div>
+</body>
+</html>

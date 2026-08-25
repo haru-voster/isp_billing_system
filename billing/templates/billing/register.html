@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Connected — Free 7-Day Trial</title>
+    <style>
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 32px; border-radius: 12px; width: 100%; max-width: 380px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        p.sub { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+        label { display: block; font-size: 13px; margin-bottom: 6px; color: #cbd5e1; }
+        input, select { width: 100%; padding: 10px 12px; margin-bottom: 16px; border-radius: 8px;
+                        border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 14px;
+                        box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #22c55e;
+                 color: #052e16; font-weight: 600; font-size: 15px; cursor: pointer; }
+        button:hover { background: #16a34a; }
+        .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+        .msg.error { background: #450a0a; color: #fca5a5; }
+        .msg.success { background: #052e16; color: #86efac; }
+        .badge { display: inline-block; background: #082f49; color: #7dd3fc; padding: 4px 10px;
+                 border-radius: 999px; font-size: 12px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <span class="badge">Free 7-day trial</span>
+        <h1>Create your account</h1>
+        <p class="sub">Get online in seconds. After 7 days, top up to keep your connection active.</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="msg {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <label for="full_name">Full name</label>
+            <input type="text" id="full_name" name="full_name" required>
+
+            <label for="phone_number">Phone number (e.g. 2547XXXXXXXX)</label>
+            <input type="tel" id="phone_number" name="phone_number" pattern="254[0-9]{9}" required>
+
+            <label for="connection_type">Connection type</label>
+            <select id="connection_type" name="connection_type">
+                <option value="pppoe">PPPoE (wired)</option>
+                <option value="hotspot">Hotspot (WiFi)</option>
+            </select>
+
+            <button type="submit">Start my free 7 days</button>
+        </form>
+    </div>
+</body>
+</html>

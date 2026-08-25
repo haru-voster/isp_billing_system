@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               margin: 0; padding: 24px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .topbar h1 { font-size: 20px; margin: 0; }
+        .logout { color: #94a3b8; font-size: 13px; text-decoration: none; }
+        .logout:hover { color: #e2e8f0; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #1e293b; border-radius: 12px; padding: 20px; }
+        .stat-card .label { color: #94a3b8; font-size: 12px; margin-bottom: 6px; }
+        .stat-card .value { font-size: 26px; font-weight: 700; }
+        .stat-card.green .value { color: #86efac; }
+        .stat-card.blue .value { color: #7dd3fc; }
+        .stat-card.orange .value { color: #fdba74; }
+        .stat-card.red .value { color: #fca5a5; }
+
+        .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 800px) { .charts-grid { grid-template-columns: 1fr; } }
+        .chart-card { background: #1e293b; border-radius: 12px; padding: 20px; }
+        .chart-card h2 { font-size: 15px; margin: 0 0 16px 0; color: #cbd5e1; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; color: #94a3b8; font-weight: 500; padding: 8px; border-bottom: 1px solid #334155; }
+        td { padding: 8px; border-bottom: 1px solid #1e293b; }
+        .table-card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .table-card h2 { font-size: 15px; margin: 0 0 16px 0; color: #cbd5e1; }
+        .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+        .pill.success { background: #052e16; color: #86efac; }
+        .pill.pending { background: #422006; color: #fdba74; }
+        .pill.failed { background: #450a0a; color: #fca5a5; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>ISP Billing — Admin Dashboard</h1>
+        <a class="logout" href="{% url 'billing:staff_logout' %}">Log out</a>
+    </div>
+    {% include "billing/_staff_nav.html" with active="dashboard" %}
+
+    <div class="stats-grid">
+        <div class="stat-card green">
+            <div class="label">Revenue this month</div>
+            <div class="value">KES {{ revenue_this_month }}</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="label">Revenue all-time</div>
+            <div class="value">KES {{ revenue_all_time }}</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="label">Active customers</div>
+            <div class="value">{{ active_customers }}</div>
+        </div>
+        <div class="stat-card orange">
+            <div class="label">On trial</div>
+            <div class="value">{{ trial_customers }}</div>
+        </div>
+        <div class="stat-card red">
+            <div class="label">Suspended / expired</div>
+            <div class="value">{{ expired_customers }}</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h2>Revenue — last 30 days</h2>
+            <canvas id="revenueChart" height="90"></canvas>
+        </div>
+        <div class="chart-card">
+            <h2>Revenue by plan</h2>
+            <canvas id="planChart" height="90"></canvas>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <h2>Recent payments</h2>
+        <table>
+            <thead>
+                <tr><th>Customer</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+                {% for p in recent_payments %}
+                <tr>
+                    <td>{{ p.customer.full_name }}</td>
+                    <td>{{ p.plan.name|default:"-" }}</td>
+                    <td>KES {{ p.amount }}</td>
+                    <td><span class="pill {{ p.status }}">{{ p.get_status_display }}</span></td>
+                    <td>{{ p.created_at|date:"d M, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No payments yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-card">
+        <h2>Monthly revenue-share invoices</h2>
+        <table>
+            <thead>
+                <tr><th>Recipient</th><th>Period</th><th>Total earnings</th><th>Share</th><th>Sent</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in recent_invoices %}
+                <tr>
+                    <td>{{ inv.recipient.name }}</td>
+                    <td>{{ inv.period_start|date:"M Y" }}</td>
+                    <td>KES {{ inv.total_earnings }}</td>
+                    <td>KES {{ inv.share_amount }}</td>
+                    <td><span class="pill {% if inv.sent %}success{% else %}pending{% endif %}">{% if inv.sent %}Sent{% else %}Pending{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No monthly invoices generated yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const revenueCtx = document.getElementById('revenueChart');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: {{ daily_labels|safe }},
+                datasets: [{
+                    label: 'Revenue (KES)',
+                    data: {{ daily_totals|safe }},
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.15)',
+                    fill: true,
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                }
+            }
+        });
+
+        const planCtx = document.getElementById('planChart');
+        new Chart(planCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ plan_labels|safe }},
+                datasets: [{
+                    data: {{ plan_totals|safe }},
+                    backgroundColor: ['#22c55e', '#7dd3fc', '#fdba74', '#f472b6', '#a78bfa', '#facc15'],
+                }]
+            },
+            options: {
+                plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } } }
+            }
+        });
+    </script>
+</body>
+</html>

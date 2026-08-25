@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routers — Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               margin: 0; padding: 24px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .topbar h1 { font-size: 20px; margin: 0; }
+        .logout { color: #94a3b8; font-size: 13px; text-decoration: none; }
+        .btn { display: inline-block; padding: 10px 16px; border-radius: 8px; background: #22c55e;
+               color: #052e16; font-weight: 600; font-size: 13px; text-decoration: none; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; background: #1e293b; border-radius: 12px; overflow: hidden; }
+        th { text-align: left; color: #94a3b8; font-weight: 500; padding: 12px; border-bottom: 1px solid #334155; }
+        td { padding: 12px; border-bottom: 1px solid #0f172a; }
+        .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+        .pill.active { background: #052e16; color: #86efac; }
+        .pill.inactive { background: #450a0a; color: #fca5a5; }
+        .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+        .msg.error { background: #450a0a; color: #fca5a5; }
+        .msg.success { background: #052e16; color: #86efac; }
+        a { color: #7dd3fc; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>Routers</h1>
+        <a class="logout" href="{% url 'billing:staff_logout' %}">Log out</a>
+    </div>
+    {% include "billing/_staff_nav.html" with active="routers" %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a class="btn" href="{% url 'billing:staff_router_create' %}">+ New Router</a>
+
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Host</th><th>API Port</th><th>SSL</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for router in routers %}
+            <tr>
+                <td>{{ router.name }}</td>
+                <td>{{ router.host }}</td>
+                <td>{{ router.api_port }}</td>
+                <td>{% if router.use_ssl %}Yes{% else %}No{% endif %}</td>
+                <td>{% if router.is_active %}<span class="pill active">Active</span>{% else %}<span class="pill inactive">Inactive</span>{% endif %}</td>
+                <td><a href="{% url 'billing:staff_router_edit' router.id %}">Edit</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No routers yet — add one above before creating plans.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

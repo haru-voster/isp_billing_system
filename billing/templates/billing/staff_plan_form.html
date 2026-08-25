@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if plan %}Edit Plan{% else %}New Plan{% endif %} — Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               margin: 0; padding: 24px; }
+        .container { max-width: 520px; }
+        h1 { font-size: 20px; margin-bottom: 20px; }
+        .card { background: #1e293b; padding: 24px; border-radius: 12px; }
+        label { display: block; font-size: 13px; margin-bottom: 6px; color: #cbd5e1; margin-top: 14px; }
+        label:first-child { margin-top: 0; }
+        input, select { width: 100%; padding: 10px 12px; border-radius: 8px;
+                        border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 14px;
+                        box-sizing: border-box; }
+        .help { color: #64748b; font-size: 12px; margin-top: 4px; }
+        .row { display: flex; gap: 12px; }
+        .row > div { flex: 1; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+        .checkbox-row input { width: auto; }
+        button { margin-top: 24px; width: 100%; padding: 12px; border: none; border-radius: 8px;
+                 background: #22c55e; color: #052e16; font-weight: 600; font-size: 15px; cursor: pointer; }
+        .back { color: #94a3b8; font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+        .errorlist { color: #fca5a5; font-size: 12px; list-style: none; padding: 0; margin: 4px 0 0 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back" href="{% url 'billing:staff_plans' %}">← Back to Plans</a>
+        <h1>{% if plan %}Edit {{ plan.name }}{% else %}Create New Plan{% endif %}</h1>
+
+        <div class="card">
+            <form method="post">
+                {% csrf_token %}
+
+                <label for="{{ form.name.id_for_label }}">Plan name</label>
+                {{ form.name }}
+                {{ form.name.errors }}
+
+                <label for="{{ form.connection_type.id_for_label }}">Connection type</label>
+                {{ form.connection_type }}
+                {{ form.connection_type.errors }}
+
+                <div class="row">
+                    <div>
+                        <label for="{{ form.download_speed_mbps.id_for_label }}">Download speed (Mbps)</label>
+                        {{ form.download_speed_mbps }}
+                        {{ form.download_speed_mbps.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.upload_speed_mbps.id_for_label }}">Upload speed (Mbps)</label>
+                        {{ form.upload_speed_mbps }}
+                        <div class="help">Leave blank to match download</div>
+                        {{ form.upload_speed_mbps.errors }}
+                    </div>
+                </div>
+
+                <label for="{{ form.mikrotik_profile.id_for_label }}">MikroTik profile name</label>
+                {{ form.mikrotik_profile }}
+                <div class="help">{{ form.mikrotik_profile.help_text }}</div>
+                {{ form.mikrotik_profile.errors }}
+
+                <div class="row">
+                    <div>
+                        <label for="{{ form.price.id_for_label }}">Price (KES)</label>
+                        {{ form.price }}
+                        {{ form.price.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.validity_days.id_for_label }}">Validity (days)</label>
+                        {{ form.validity_days }}
+                        {{ form.validity_days.errors }}
+                    </div>
+                </div>
+
+                <div class="checkbox-row">
+                    {{ form.is_trial }}
+                    <label for="{{ form.is_trial.id_for_label }}" style="margin:0;">This is a trial plan</label>
+                </div>
+                <div class="checkbox-row">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" style="margin:0;">Active</label>
+                </div>
+
+                <button type="submit">{% if plan %}Save & Sync to Routers{% else %}Create & Sync to Routers{% endif %}</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

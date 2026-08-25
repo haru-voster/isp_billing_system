@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plans — Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               margin: 0; padding: 24px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .topbar h1 { font-size: 20px; margin: 0; }
+        .logout { color: #94a3b8; font-size: 13px; text-decoration: none; }
+        .btn { display: inline-block; padding: 10px 16px; border-radius: 8px; background: #22c55e;
+               color: #052e16; font-weight: 600; font-size: 13px; text-decoration: none; margin-bottom: 20px; }
+        .btn.secondary { background: #334155; color: #e2e8f0; margin-left: 8px; padding: 6px 12px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; background: #1e293b; border-radius: 12px; overflow: hidden; }
+        th { text-align: left; color: #94a3b8; font-weight: 500; padding: 12px; border-bottom: 1px solid #334155; }
+        td { padding: 12px; border-bottom: 1px solid #0f172a; }
+        .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+        .pill.active { background: #052e16; color: #86efac; }
+        .pill.inactive { background: #450a0a; color: #fca5a5; }
+        .pill.trial { background: #082f49; color: #7dd3fc; }
+        .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+        .msg.error { background: #450a0a; color: #fca5a5; }
+        .msg.success { background: #052e16; color: #86efac; }
+        .msg.warning { background: #422006; color: #fdba74; }
+        a { color: #7dd3fc; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>Plans</h1>
+        <a class="logout" href="{% url 'billing:staff_logout' %}">Log out</a>
+    </div>
+    {% include "billing/_staff_nav.html" with active="plans" %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a class="btn" href="{% url 'billing:staff_plan_create' %}">+ New Plan</a>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th><th>Type</th><th>Speed (up/down)</th><th>MikroTik profile</th>
+                <th>Price</th><th>Validity</th><th>Status</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in plans %}
+            <tr>
+                <td>{{ plan.name }}</td>
+                <td>{{ plan.get_connection_type_display }}</td>
+                <td>{{ plan.rate_limit_string }}</td>
+                <td><code>{{ plan.mikrotik_profile }}</code></td>
+                <td>KES {{ plan.price }}</td>
+                <td>{{ plan.validity_days }} days</td>
+                <td>
+                    {% if plan.is_trial %}<span class="pill trial">Trial</span>{% endif %}
+                    {% if plan.is_active %}<span class="pill active">Active</span>{% else %}<span class="pill inactive">Inactive</span>{% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'billing:staff_plan_edit' plan.id %}">Edit</a>
+                    <a class="btn secondary" href="{% url 'billing:staff_plan_resync' plan.id %}">Sync to routers</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8">No plans yet — create one above.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
