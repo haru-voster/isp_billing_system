@@ -8,6 +8,7 @@ Register these settings in ispbilling/settings.py or a .env file:
     MPESA_PASSKEY             (Lipa Na M-Pesa Online passkey from Daraja portal)
     MPESA_CALLBACK_URL        (public HTTPS URL to your /billing/mpesa/callback/ view)
     MPESA_ENV                 ("sandbox" or "production")
+    
 """
 import base64
 import datetime
