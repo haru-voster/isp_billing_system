@@ -25,9 +25,9 @@ SECRET_KEY = 'django-insecure-+xefv2x1pf374u8@+4+9(=po1a5dl5_^re7ucw+!hu!c)bcy%^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["haruvoster.co.ke", "www.haruvoster.co.ke"]
+ALLOWED_HOSTS = ["isp.haruvoster.co.ke", "www.isp.haruvoster.co.ke"]
 
-CSRF_TRUSTED_ORIGINS = ["https://haruvoster.co.ke", "https://www.haruvoster.co.ke"]
+CSRF_TRUSTED_ORIGINS = ["https://isp.haruvoster.co.ke", "https://www.isp.haruvoster.co.ke"]
 
 
 # Application definition
