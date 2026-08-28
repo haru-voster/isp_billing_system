@@ -23,9 +23,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-+xefv2x1pf374u8@+4+9(=po1a5dl5_^re7ucw+!hu!c)bcy%^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["haruvoster.co.ke", "www.haruvoster.co.ke"]
+
+CSRF_TRUSTED_ORIGINS = ["https://haruvoster.co.ke", "https://www.haruvoster.co.ke"]
 
 
 # Application definition
@@ -142,9 +144,9 @@ MPESA_CALLBACK_URL = "https://yourdomain.com/billing/mpesa/callback/"
 # bank account (e.g. KCB). Get these from https://sandbox.intasend.com
 # (test keys) or https://intasend.com (live keys) under Settings > API Keys.
 # ---------------------------------------------------------------------------
-INTASEND_PUBLISHABLE_KEY = "REPLACE_ME"
-INTASEND_SECRET_KEY = "REPLACE_ME"
-INTASEND_TEST_MODE = True  # switch to False once your IntaSend account is live
+INTASEND_PUBLISHABLE_KEY = "ISPubKey_live_bb1325db-379d-4189-ac2e-97a397f95ddf"
+INTASEND_SECRET_KEY = "ISSecretKey_live_b1c15db4-0ca0-4b53-b514-9a1d56c7e4c9"
+INTASEND_TEST_MODE = False  # switch to False once your IntaSend account is live
 INTASEND_WEBHOOK_URL = "https://yourdomain.com/billing/intasend/webhook/"
 
 
