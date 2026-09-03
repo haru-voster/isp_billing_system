@@ -26,6 +26,10 @@
             <div><span>Login:</span> {{ customer.mikrotik_username }}</div>
             <div><span>Plan:</span> Trial — 7 days</div>
         </div>
+        <p style="font-size:13px; color:#94a3b8; margin-top:16px;">
+            You can log back in anytime during your trial with your email and password at
+            <a href="{% url 'billing:customer_login' %}" style="color:#7dd3fc;">the account login page</a>.
+        </p>
         <a class="btn" href="{% url 'billing:pay' %}">Already want to top up?</a>
     </div>
 </body>

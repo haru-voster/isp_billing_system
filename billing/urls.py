@@ -7,6 +7,11 @@ urlpatterns = [
     path("register/", views.register_customer, name="register"),
     path("register/verify/", views.verify_registration, name="verify_registration"),
     path("register/resend-otp/", views.resend_otp, name="resend_otp"),
+
+    path("login/", views.customer_login, name="customer_login"),
+    path("logout/", views.customer_logout, name="customer_logout"),
+    path("account/", views.customer_dashboard, name="customer_dashboard"),
+
     path("pay/", views.pay, name="pay"),
     path("mpesa/callback/", views.mpesa_callback, name="mpesa_callback"),
     path("intasend/webhook/", views.intasend_webhook, name="intasend_webhook"),

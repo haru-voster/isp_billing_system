@@ -21,12 +21,26 @@
         .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
         .msg.error { background: #450a0a; color: #fca5a5; }
         .msg.success { background: #052e16; color: #86efac; }
+        .auto-code { background: #082f49; border: 1px dashed #38bdf8; border-radius: 8px;
+                     padding: 14px; margin-bottom: 20px; text-align: center; }
+        .auto-code .label { font-size: 12px; color: #7dd3fc; margin-bottom: 6px; }
+        .auto-code .code { font-size: 26px; font-weight: 700; letter-spacing: 6px; color: #e0f2fe;
+                            font-family: "SFMono-Regular", Consolas, monospace; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>Enter verification code</h1>
-        <p class="sub">We sent a 6-digit code to {{ phone_number }}.</p>
+
+        {% if display_code %}
+            <p class="sub">SMS isn't connected yet, so here's your code — enter it below to continue.</p>
+            <div class="auto-code">
+                <div class="label">YOUR CODE</div>
+                <div class="code">{{ display_code }}</div>
+            </div>
+        {% else %}
+            <p class="sub">We sent a 6-digit code to {{ phone_number }}.</p>
+        {% endif %}
 
         {% if messages %}
             {% for message in messages %}
@@ -37,10 +51,11 @@
         <form method="post">
             {% csrf_token %}
             <label for="code">Code</label>
-            <input type="text" id="code" name="code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required autofocus>
+            <input type="text" id="code" name="code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
+                   {% if display_code %}value="{{ display_code }}"{% endif %} required autofocus>
             <button type="submit">Verify &amp; Activate</button>
         </form>
-        <a class="resend" href="{% url 'billing:resend_otp' %}">Didn't get a code? Resend</a>
+        <a class="resend" href="{% url 'billing:resend_otp' %}">{% if display_code %}Generate a new code{% else %}Didn't get a code? Resend{% endif %}</a>
     </div>
 </body>
 </html>

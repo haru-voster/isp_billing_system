@@ -11,6 +11,13 @@ Settings needed in ispbilling/settings.py:
     AFRICASTALKING_USERNAME
     AFRICASTALKING_API_KEY
     AFRICASTALKING_SENDER_ID   (optional, blank uses the shared shortcode)
+
+Until those are filled in with real Africa's Talking credentials,
+SMS_ENABLED is False and generate_otp() skips the network call entirely
+(no point burning a request on a placeholder API key) — the caller is
+expected to show otp.code on-screen instead. Once you add real
+AFRICASTALKING_* values, SMS_ENABLED flips on automatically and this
+goes back to sending a real text with no code changes needed here.
 """
 import logging
 import random
@@ -25,15 +32,26 @@ logger = logging.getLogger(__name__)
 
 AT_SMS_URL = "https://api.africastalking.com/version1/messaging"
 
+SMS_ENABLED = bool(getattr(settings, "AFRICASTALKING_API_KEY", "")) and \
+    getattr(settings, "AFRICASTALKING_API_KEY", "") != "REPLACE_ME"
+
 
 def generate_otp(phone_number):
-    """Create and send a fresh 6-digit OTP. Invalidates any earlier unverified
-    codes for the same number by simply superseding them (we always check the
-    most recent one on verify)."""
+    """Create a fresh 6-digit OTP. Invalidates any earlier unverified codes
+    for the same number by simply superseding them (we always check the
+    most recent one on verify). Sends it by SMS only if a real Africa's
+    Talking key is configured (see SMS_ENABLED above) — otherwise the
+    caller shows otp.code on-screen so registration still works without
+    a live SMS gateway."""
     code = f"{random.randint(0, 999999):06d}"
     otp = PhoneOTP.objects.create(phone_number=phone_number, code=code)
-    send_sms(phone_number, f"Your verification code is {code}. It expires in "
-                            f"{PhoneOTP.OTP_VALIDITY_MINUTES} minutes.")
+
+    if SMS_ENABLED:
+        send_sms(phone_number, f"Your verification code is {code}. It expires in "
+                                f"{PhoneOTP.OTP_VALIDITY_MINUTES} minutes.")
+    else:
+        logger.info("SMS not configured — skipping send, code for %s is %s", phone_number, code)
+
     return otp
 
 

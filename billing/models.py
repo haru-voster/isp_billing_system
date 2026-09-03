@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal
 
+from django.contrib.auth.hashers import make_password, check_password as check_password_hash
 from django.db import models
 from django.utils import timezone
 
@@ -84,7 +85,11 @@ class Customer(models.Model):
 
     full_name = models.CharField(max_length=150)
     phone_number = models.CharField(max_length=15, unique=True, help_text="Format: 2547XXXXXXXX")
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(unique=True, help_text="Used to log in to the customer portal")
+    password = models.CharField(
+        max_length=128, blank=True, default="",
+        help_text="Hashed portal login password (set via set_password()) — NOT the MikroTik password"
+    )
     router = models.ForeignKey(Router, on_delete=models.PROTECT, related_name="customers")
     connection_type = models.CharField(max_length=10, choices=ConnectionType.choices)
     mikrotik_username = models.CharField(max_length=100, unique=True)
@@ -98,6 +103,25 @@ class Customer(models.Model):
     @property
     def current_subscription(self):
         return self.subscriptions.order_by("-expiry_date").first()
+
+    def set_password(self, raw_password):
+        """Hash and store the customer portal login password."""
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        """Verify a plaintext password against the stored hash."""
+        if not self.password:
+            return False
+        return check_password_hash(raw_password, self.password)
+
+    @property
+    def login_allowed(self):
+        """Portal login is only valid while the customer's current
+        subscription (the 7-day trial, or a paid plan) hasn't expired.
+        Once it lapses, login is refused — a lapsed trial customer is
+        expected to register a fresh account rather than reuse this one."""
+        sub = self.current_subscription
+        return sub is not None and not sub.is_expired
 
 
 class Subscription(models.Model):

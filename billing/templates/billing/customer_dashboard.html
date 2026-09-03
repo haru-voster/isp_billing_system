@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Internet Account</title>
+    <style>
+        body { font-family: -apple-system, Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 32px; border-radius: 12px; width: 100%; max-width: 380px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        p.sub { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        label { display: block; font-size: 13px; margin-bottom: 6px; color: #cbd5e1; }
+        select { width: 100%; padding: 10px 12px; margin-bottom: 16px; border-radius: 8px;
+                 border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 14px;
+                 box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #22c55e;
+                 color: #052e16; font-weight: 600; font-size: 15px; cursor: pointer; }
+        .status { padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+        .status.active { background: #052e16; color: #86efac; }
+        .status.expired { background: #450a0a; color: #fca5a5; }
+        .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+        .msg.error { background: #450a0a; color: #fca5a5; }
+        .msg.success { background: #052e16; color: #86efac; }
+        a.logout { display: block; text-align: center; color: #94a3b8; font-size: 13px;
+                   text-decoration: none; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Hi {{ customer.full_name }}</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="msg {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if subscription and not subscription.is_expired %}
+            <div class="status active">
+                ✅ Your account is active — expires {{ subscription.expiry_date|date:"d M Y, H:i" }}.
+            </div>
+            <p class="sub">You're online. Enjoy your connection.</p>
+        {% else %}
+            <div class="status expired">
+                ⚠️ Your subscription has expired. Top up below to get back online instantly.
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <label for="plan_id">Choose a plan</label>
+                <select id="plan_id" name="plan_id" required>
+                    {% for plan in plans %}
+                        <option value="{{ plan.id }}">{{ plan.name }} — KES {{ plan.price }} ({{ plan.validity_days }} days)</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Pay with M-Pesa</button>
+            </form>
+        {% endif %}
+
+        <a class="logout" href="{% url 'billing:customer_logout' %}">Log out</a>
+    </div>
+</body>
+</html>

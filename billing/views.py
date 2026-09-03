@@ -28,28 +28,53 @@ staff_required = user_passes_test(lambda u: u.is_active and u.is_staff, login_ur
 # ---------------------------------------------------------------------------
 
 def register_customer(request):
-    """Step 1: collect name/phone/connection type, send an OTP, move to step 2."""
+    """Step 1: collect name/phone/email/password/connection type, generate
+    an OTP, move to step 2. The OTP is only actually texted if Africa's
+    Talking is configured (see otp.SMS_ENABLED) — otherwise verify_registration
+    shows the code on-screen so signup still works without a live SMS gateway."""
     if request.method == "POST":
         full_name = request.POST.get("full_name", "").strip()
         phone_number = request.POST.get("phone_number", "").strip()
+        email = request.POST.get("email", "").strip().lower()
+        password = request.POST.get("password", "")
+        confirm_password = request.POST.get("confirm_password", "")
         connection_type = request.POST.get("connection_type", Customer.ConnectionType.PPPOE)
 
-        if not full_name or not phone_number:
-            messages.error(request, "Name and phone number are required.")
+        if not full_name or not phone_number or not email or not password:
+            messages.error(request, "All fields are required.")
+            return render(request, "billing/register.html")
+
+        if len(password) < 6:
+            messages.error(request, "Password must be at least 6 characters.")
+            return render(request, "billing/register.html")
+
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
             return render(request, "billing/register.html")
 
         if Customer.objects.filter(phone_number=phone_number).exists():
             messages.error(request, "An account with this phone number already exists.")
             return render(request, "billing/register.html")
 
-        otp_helper.generate_otp(phone_number)
+        if Customer.objects.filter(email__iexact=email).exists():
+            messages.error(request, "An account with this email already exists.")
+            return render(request, "billing/register.html")
+
+        otp = otp_helper.generate_otp(phone_number)
 
         request.session["pending_registration"] = {
             "full_name": full_name,
             "phone_number": phone_number,
+            "email": email,
+            "password": password,
             "connection_type": connection_type,
         }
-        messages.success(request, f"We sent a verification code to {phone_number}.")
+        # No live SMS gateway yet — carry the code in the session so the
+        # verify page can show it directly instead of texting it.
+        request.session["pending_otp_display"] = None if otp_helper.SMS_ENABLED else otp.code
+
+        if otp_helper.SMS_ENABLED:
+            messages.success(request, f"We sent a verification code to {phone_number}.")
         return redirect("billing:verify_registration")
 
     return render(request, "billing/register.html")
@@ -62,30 +87,41 @@ def verify_registration(request):
         messages.error(request, "Please start registration again.")
         return redirect("billing:register")
 
+    display_code = request.session.get("pending_otp_display")
+
     if request.method == "POST":
         code = request.POST.get("code", "").strip()
         ok, error = otp_helper.verify_otp(pending["phone_number"], code)
 
         if not ok:
             messages.error(request, error)
-            return render(request, "billing/verify_otp.html", {"phone_number": pending["phone_number"]})
+            return render(request, "billing/verify_otp.html", {
+                "phone_number": pending["phone_number"],
+                "display_code": display_code,
+            })
 
         customer = _create_trial_customer(**pending)
         del request.session["pending_registration"]
+        request.session.pop("pending_otp_display", None)
         return render(request, "billing/register_success.html", {"customer": customer})
 
-    return render(request, "billing/verify_otp.html", {"phone_number": pending["phone_number"]})
+    return render(request, "billing/verify_otp.html", {
+        "phone_number": pending["phone_number"],
+        "display_code": display_code,
+    })
 
 
 def resend_otp(request):
     pending = request.session.get("pending_registration")
     if pending:
-        otp_helper.generate_otp(pending["phone_number"])
-        messages.success(request, "A new code has been sent.")
+        otp = otp_helper.generate_otp(pending["phone_number"])
+        request.session["pending_otp_display"] = None if otp_helper.SMS_ENABLED else otp.code
+        messages.success(request, "A new code has been generated." if not otp_helper.SMS_ENABLED
+                          else "A new code has been sent.")
     return redirect("billing:verify_registration")
 
 
-def _create_trial_customer(full_name, phone_number, connection_type):
+def _create_trial_customer(full_name, phone_number, email, password, connection_type):
     router = Router.objects.filter(is_active=True).first()
 
     trial_plan, _ = Plan.objects.get_or_create(
@@ -99,14 +135,17 @@ def _create_trial_customer(full_name, phone_number, connection_type):
         },
     )
 
-    customer = Customer.objects.create(
+    customer = Customer(
         full_name=full_name,
         phone_number=phone_number,
+        email=email,
         router=router,
         connection_type=connection_type,
         mikrotik_username=phone_number,
         mikrotik_password=phone_number[-6:],  # simple default PIN; customer should change it
     )
+    customer.set_password(password)
+    customer.save()
 
     Subscription.objects.create(
         customer=customer,
@@ -124,6 +163,100 @@ def _create_trial_customer(full_name, phone_number, connection_type):
         logger.exception("Failed to provision MikroTik account for %s", customer)
 
     return customer
+
+
+# ---------------------------------------------------------------------------
+# Customer portal login — email + password, separate from the walled-garden
+# portal_status view below (which is unauthenticated, keyed off the MikroTik
+# username param). Session-based: no django.contrib.auth.User is created for
+# customers, so we just stash the customer id in the session ourselves.
+# Login is only accepted while the customer's current subscription (the
+# 7-day trial, or a paid plan) hasn't expired — see Customer.login_allowed.
+# ---------------------------------------------------------------------------
+
+def customer_login(request):
+    if request.session.get("customer_id"):
+        return redirect("billing:customer_dashboard")
+
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip().lower()
+        password = request.POST.get("password", "")
+
+        customer = Customer.objects.filter(email__iexact=email).first()
+
+        if customer is None or not customer.check_password(password):
+            messages.error(request, "Incorrect email or password.")
+            return render(request, "billing/customer_login.html")
+
+        if not customer.login_allowed:
+            messages.error(
+                request,
+                "Your 7-day trial has ended, so this login is no longer valid. "
+                "Please register a new account to get another 7 days."
+            )
+            return render(request, "billing/customer_login.html")
+
+        request.session["customer_id"] = customer.id
+        return redirect("billing:customer_dashboard")
+
+    return render(request, "billing/customer_login.html")
+
+
+def customer_logout(request):
+    request.session.pop("customer_id", None)
+    return redirect("billing:customer_login")
+
+
+def customer_dashboard(request):
+    customer_id = request.session.get("customer_id")
+    if not customer_id:
+        return redirect("billing:customer_login")
+
+    customer = Customer.objects.filter(id=customer_id).first()
+    if customer is None or not customer.login_allowed:
+        request.session.pop("customer_id", None)
+        messages.error(request, "Your session has expired. Please log in again.")
+        return redirect("billing:customer_login")
+
+    plans = Plan.objects.filter(is_active=True, is_trial=False)
+    sub = customer.current_subscription
+
+    if request.method == "POST":
+        plan_id = request.POST.get("plan_id")
+        plan = get_object_or_404(Plan, id=plan_id)
+
+        payment = Payment.objects.create(
+            customer=customer,
+            plan=plan,
+            amount=plan.price,
+            phone_number=customer.phone_number,
+            status=Payment.Status.PENDING,
+        )
+        try:
+            response = intasend_payment.stk_push(
+                phone_number=customer.phone_number,
+                amount=plan.price,
+                api_ref=str(payment.id),
+                narrative=f"{plan.name} - {customer.mikrotik_username}",
+                email=customer.email,
+                name=customer.full_name,
+            )
+            payment.checkout_request_id = intasend_payment.extract_invoice_id(response)
+            payment.save()
+            messages.success(request, "Check your phone and enter your M-Pesa PIN to complete payment.")
+        except Exception:
+            logger.exception("IntaSend STK push failed from customer dashboard for payment %s", payment.id)
+            payment.status = Payment.Status.FAILED
+            payment.save()
+            messages.error(request, "Could not initiate payment. Please try again.")
+
+        return redirect("billing:customer_dashboard")
+
+    return render(request, "billing/customer_dashboard.html", {
+        "customer": customer,
+        "subscription": sub,
+        "plans": plans,
+    })
 
 
 # ---------------------------------------------------------------------------
