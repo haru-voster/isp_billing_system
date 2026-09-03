@@ -125,24 +125,29 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # ---------------------------------------------------------------------------
-# M-Pesa Daraja settings — only needed once you have your own Till/Paybill.
-# Currently unused while PAYMENT_PROVIDER is "intasend" (see below), but left
-# here so switching back is just a matter of updating views.py's imports.
+# M-Pesa Daraja settings — this is now the active payment provider (views.py
+# calls mpesa.stk_push directly). Get these from https://developer.safaricom.co.ke
+# after your Paybill/Till is approved: Consumer Key + Secret come from your
+# Daraja app, Passkey from the "Lipa Na M-Pesa Online" product on your app,
+# Shortcode is your actual Paybill/Till number. MPESA_CALLBACK_URL must be a
+# real public HTTPS URL Safaricom can reach — replace yourdomain.com.
+# REPLACE ALL FIVE VALUES BELOW before going live; sandbox works for testing
+# with Safaricom's shared test shortcode/passkey in the meantime.
 # Never commit real values to source control.
 # ---------------------------------------------------------------------------
-MPESA_ENV = "sandbox"
-MPESA_CONSUMER_KEY = "REPLACE_ME"
-MPESA_CONSUMER_SECRET = "REPLACE_ME"
-MPESA_SHORTCODE = "REPLACE_ME"
-MPESA_PASSKEY = "REPLACE_ME"
-MPESA_CALLBACK_URL = "https://yourdomain.com/billing/mpesa/callback/"
+MPESA_ENV = "sandbox"  # change to "production" once you have real Daraja credentials
+MPESA_CONSUMER_KEY = "DRemH02AWuvTBQvHfSY4rkwjGPzATYizI3J2H2mQFRwvy4TR"
+MPESA_CONSUMER_SECRET = "zhAZ4G1GWRcNgq9Me735b3iGNKrPtDybNVX3y9A1TeApBYU25Ih117zjamoIiJTF"
+MPESA_SHORTCODE = "174379"
+MPESA_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+MPESA_CALLBACK_URL = "https://isp.haruvoster.co.ke/billing/mpesa/callback/"
 
 
 # ---------------------------------------------------------------------------
-# IntaSend — currently the active payment provider. No Till/Paybill of your
-# own required; IntaSend settles collected M-Pesa payments to your linked
-# bank account (e.g. KCB). Get these from https://sandbox.intasend.com
-# (test keys) or https://intasend.com (live keys) under Settings > API Keys.
+# IntaSend — no longer used to initiate payments (views.py now calls Daraja
+# directly via mpesa.stk_push). Left here only because intasend_webhook is
+# still a valid endpoint if you ever accept payments through IntaSend again;
+# it's safe to ignore these values otherwise.
 # ---------------------------------------------------------------------------
 INTASEND_PUBLISHABLE_KEY = "ISPubKey_live_bb1325db-379d-4189-ac2e-97a397f95ddf"
 INTASEND_SECRET_KEY = "ISSecretKey_live_b1c15db4-0ca0-4b53-b514-9a1d56c7e4c9"

@@ -233,19 +233,18 @@ def customer_dashboard(request):
             status=Payment.Status.PENDING,
         )
         try:
-            response = intasend_payment.stk_push(
+            response = mpesa.stk_push(
                 phone_number=customer.phone_number,
                 amount=plan.price,
-                api_ref=str(payment.id),
-                narrative=f"{plan.name} - {customer.mikrotik_username}",
-                email=customer.email,
-                name=customer.full_name,
+                account_reference=customer.mikrotik_username,
+                transaction_desc=plan.name,
             )
-            payment.checkout_request_id = intasend_payment.extract_invoice_id(response)
+            payment.checkout_request_id = response["CheckoutRequestID"]
+            payment.merchant_request_id = response.get("MerchantRequestID")
             payment.save()
             messages.success(request, "Check your phone and enter your M-Pesa PIN to complete payment.")
         except Exception:
-            logger.exception("IntaSend STK push failed from customer dashboard for payment %s", payment.id)
+            logger.exception("Daraja STK push failed from customer dashboard for payment %s", payment.id)
             payment.status = Payment.Status.FAILED
             payment.save()
             messages.error(request, "Could not initiate payment. Please try again.")
@@ -282,19 +281,18 @@ def pay(request):
         )
 
         try:
-            response = intasend_payment.stk_push(
+            response = mpesa.stk_push(
                 phone_number=phone_number,
                 amount=plan.price,
-                api_ref=str(payment.id),
-                narrative=f"{plan.name} - {customer.mikrotik_username}",
-                email=customer.email,
-                name=customer.full_name,
+                account_reference=customer.mikrotik_username,
+                transaction_desc=plan.name,
             )
-            payment.checkout_request_id = intasend_payment.extract_invoice_id(response)
+            payment.checkout_request_id = response["CheckoutRequestID"]
+            payment.merchant_request_id = response.get("MerchantRequestID")
             payment.save()
             messages.success(request, "Check your phone and enter your M-Pesa PIN to complete payment.")
         except Exception:
-            logger.exception("IntaSend STK push failed for payment %s", payment.id)
+            logger.exception("Daraja STK push failed for payment %s", payment.id)
             payment.status = Payment.Status.FAILED
             payment.save()
             messages.error(request, "Could not initiate payment. Please try again.")
@@ -451,19 +449,18 @@ def portal_status(request):
             status=Payment.Status.PENDING,
         )
         try:
-            response = intasend_payment.stk_push(
+            response = mpesa.stk_push(
                 phone_number=customer.phone_number,
                 amount=plan.price,
-                api_ref=str(payment.id),
-                narrative=f"{plan.name} - {customer.mikrotik_username}",
-                email=customer.email,
-                name=customer.full_name,
+                account_reference=customer.mikrotik_username,
+                transaction_desc=plan.name,
             )
-            payment.checkout_request_id = intasend_payment.extract_invoice_id(response)
+            payment.checkout_request_id = response["CheckoutRequestID"]
+            payment.merchant_request_id = response.get("MerchantRequestID")
             payment.save()
             messages.success(request, "Check your phone and enter your M-Pesa PIN to complete payment.")
         except Exception:
-            logger.exception("IntaSend STK push failed from portal for payment %s", payment.id)
+            logger.exception("Daraja STK push failed from portal for payment %s", payment.id)
             payment.status = Payment.Status.FAILED
             payment.save()
             messages.error(request, "Could not initiate payment. Please try again.")
